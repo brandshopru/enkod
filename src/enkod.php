@@ -4,13 +4,14 @@ declare(strict_types=1);
 
 namespace Brandshopru\Enkod;
 
+require 'vendor/autoload.php';
 
 class Enkod
 {
-    private string $apikey;
-    private string $env = "dev";
-    private array $emailBody;
-    private int $email_id;
+    private string $apikey; //ключ АПИ enKod
+    private int $email_id; //id письма, требуется для отправки
+    private array $email_body; //содержимое для отправки получателю
+    private string $url;
 
     public bool $isTransaction; //Является ли сообщение транзакционным
     public string $subject; //Тема сообщения
@@ -24,74 +25,88 @@ class Enkod
     public object $utm; //UTM метки для ссылок в сообщении
     public object $urlParams; //Параметры для передачи в ссылках
 
+    public function __construct(string $key, string $url="")
+    {
+        $this->apikey = $key;
+        $this->url = $url;
+    }
+
     private function makeEmailTemplate(){
-        if(!empty($this->isTransaction)) $this->emailBody['isTransaction'] = $this->isTransaction;
-        if(!empty($this->subject)) $this->emailBody['subject'] = $this->subject;;
-        if(!empty($this->fromEmail)) $this->emailBody['fromEmail'] = $this->fromEmail;
-        if(!empty($this->fromName)) $this->emailBody['fromName'] = $this->fromName;
-        if(!empty($this->html)) $this->emailBody['html'] = $this->html;
-        if(!empty($this->plainText)) $this->emailBody['plainText'] = $this->plainText;
-        if(!empty($this->replyToEmail)) $this->emailBody['replyToEmail'] = $this->replyToEmail;
-        if(!empty($this->replyToName)) $this->emailBody['replyToName'] = $this->replyToName;
-        if(!empty($this->tags)) $this->emailBody['tags'] = $this->tags;
-        if(!empty($this->utm)) $this->emailBody['utm'] = $this->utm;
-        if(!empty($this->urlParams)) $this->emailBody['urlParams'] = $this->urlParams;
+        if(!empty($this->isTransaction)) $this->email_body['isTransaction'] = $this->isTransaction;
+        if(!empty($this->subject)) $this->email_body['subject'] = $this->subject;
+        if(!empty($this->fromEmail)) $this->email_body['fromEmail'] = $this->fromEmail;
+        if(!empty($this->fromName)) $this->email_body['fromName'] = $this->fromName;
+        if(!empty($this->html)) $this->email_body['html'] = $this->html;
+        if(!empty($this->plainText)) $this->email_body['plainText'] = $this->plainText;
+        if(!empty($this->replyToEmail)) $this->email_body['replyToEmail'] = $this->replyToEmail;
+        if(!empty($this->replyToName)) $this->email_body['replyToName'] = $this->replyToName;
+        if(!empty($this->tags)) $this->email_body['tags'] = $this->tags;
+        if(!empty($this->utm)) $this->email_body['utm'] = $this->utm;
+        if(!empty($this->urlParams)) $this->email_body['urlParams'] = $this->urlParams;
 
-        echo "<pre>";
-        var_dump($this->emailBody);
-        echo "</pre>";
-
-        $this->request("message", "create");
+        try {
+            $this->request("message", "create");
+        } catch (\Exception $e) {
+            echo $e->getMessage();
+        }
     }
 
     public function sendOne(string $email, array $snippets = [], array $attachments = []){
         $this->makeEmailTemplate();
 
-        $this->emailBody = [];
-        $this->emailBody['messageId'] = $this->email_id;
-        $this->emailBody['email'] = $email;
-        $this->emailBody['snippets'] = $snippets;
-        $this->emailBody['attachment'] = $attachments;
+        $this->email_body = [];
+        $this->email_body['messageId'] = $this->email_id;
+        $this->email_body['email'] = $email;
+        $this->email_body['snippets'] = $snippets;
+        $this->email_body['attachment'] = $attachments;
 
-        $this->request("mail", "");
+        try {
+            $this->request("mail", "");
+        } catch (\Exception $e) {
+            echo $e->getMessage();
+        }
     }
 
     public function sendMany(array $recipients){
         $this->makeEmailTemplate();
 
-        $this->emailBody = [];
-        $this->emailBody['messageId'] = $this->email_id;
-        $this->emailBody['recipients'] = $recipients;
+        $this->email_body = [];
+        $this->email_body['messageId'] = $this->email_id;
+        $this->email_body['recipients'] = $recipients;
 
-        $this->request("mails", "");
+        try {
+            $this->request("mails", "");
+        } catch (\Exception $e) {
+            echo $e->getMessage();
+        }
     }
 
     private function request(string $controller, string $method){
-        if($this->env === "dev")
-            $url = "https://dev.api.enkod.ru/v1/$controller/$method";
-
-        if($this->env === "prod")
+        try {
             $url = "https://api.enkod.ru/v1/$controller/$method";
+            $postdata = json_encode($this->email_body);
 
-        $postdata = json_encode($this->emailBody);
+            $client = new \GuzzleHttp\Client();
 
-        $ch = curl_init($url);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
-        curl_setopt($ch, CURLOPT_POST, 1);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, $postdata);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-        curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type: application/json'));
-        curl_setopt($ch, CURLOPT_HTTPHEADER, ['apiKey: 0']);
-        $result = curl_exec($ch);
+            $request = $client->request('POST', $url,
+                [
+                    'headers' => [
+                        'apiKey' => $this->apikey,
+                        'content-type' => 'application/json'
+                    ],
+                    'body' => $postdata
+                ],
+            );
+            $httpcode = $request->getStatusCode();
+            $result = $request->getBody();
 
-        $httpcode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close($ch);
+            if($httpcode === 201) $this->email_id = json_decode($result)['messageId'];
+            if($httpcode === 400) throw new \Exception("Ошибка в запросе. Подробная информация в ответе в тэге message: ".json_decode($result)['message']."Код запроса: ".json_decode($result)['requestID']);
+            if($httpcode === 401) throw new \Exception("У API ключа нет прав на выполнение этого действия");
+            if($httpcode === 500) throw new \Exception("Что то пошло не так. Свяжитесь с менеджером. Код запроса: ".json_decode($result)['requestID']);
 
-        if($httpcode === 201) $this->email_id = json_decode($result)['messageId'];
-        if($httpcode === 400) exit("Ошибка в запросе. Подробная информация в ответе в тэге message: ".$result['message']."Код запроса: ".$result['requestID']);
-        if($httpcode === 401) exit("У API ключа нет прав на выполнение этого действия");
-        if($httpcode === 500) exit("Что то пошло не так. Свяжитесь с менеджером. Код запроса: ".$result['requestID']);
+        } catch (GuzzleException $e) {
+            echo $e->getMessage();
+        }
     }
 }

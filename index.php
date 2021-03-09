@@ -3,7 +3,10 @@ include "src/enkod.php";
 
 use Brandshopru\enKod;
 
-$enkod = new enKod\Enkod();
+$apiKey = "uL3saDVIel+LGKFBN9aI9kWW+tUcWWwftHBekLqycK8";
+$url = "";
+
+$enkod = new enKod\Enkod($apiKey, $url);
 
 $enkod->isTransaction = false;
 $enkod->subject = "test";
