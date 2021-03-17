@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace Brandshopru\Enkod;
 
-require 'vendor/autoload.php';
-
 class Enkod
 {
     private string $apikey; //ключ АПИ enKod
