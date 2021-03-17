@@ -45,7 +45,7 @@ class Enkod
         if(!empty($this->urlParams)) $this->email_body['urlParams'] = $this->urlParams;
 
         try {
-            $this->request("message", "create");
+            $this->request("/message/create/");
         } catch (\Exception $e) {
             echo $e->getMessage();
         }
@@ -61,7 +61,7 @@ class Enkod
         $this->email_body['attachment'] = $attachments;
 
         try {
-            $this->request("mail", "");
+            $this->request("/mail/");
         } catch (\Exception $e) {
             echo $e->getMessage();
         }
@@ -75,15 +75,15 @@ class Enkod
         $this->email_body['recipients'] = $recipients;
 
         try {
-            $this->request("mails", "");
+            $this->request("/mails/");
         } catch (\Exception $e) {
             echo $e->getMessage();
         }
     }
 
-    private function request(string $controller, string $method){
+    private function request(string $uri){
         try {
-            $url = "https://api.enkod.ru/v1/$controller/$method";
+            $url = "$this->url"."$uri";
             $postdata = json_encode($this->email_body);
 
             $client = new \GuzzleHttp\Client();
