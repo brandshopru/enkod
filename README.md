@@ -11,65 +11,38 @@ composer require brandshopru/enkod
 ```
 
 ## Использование
-В конструктор отправлется api ключ и url сервиса <br>
-Заполняются параметры письма, на сонове которых будет создан шаблон. Звездочкой отмечены обязательные параметры <br>
+В конструктор отправляется api ключ и url сервиса <br>
+
 Затем необходимо вызвать метод отправки письма:
-* $enkod->sendOne("email@email.ru"); - отправить письмо конкретному получателю
-* $enkod->sendMany($recipients); - отправить письмо нескольким получателям
+* $enkod->sendOne("email@email.ru", 1); - отправить письмо конкретному получателю, используя шаблон '1' 
+* $enkod->sendMany($recipients, 1); - отправить письмо нескольким получателям, используя шаблон '1'
 
 ```php
 <?php
-use Brandshopru\enKod;
+use Brandshopru\Enkod;
 
 $apiKey = "apikey";
-$url = "https://api.enkod.ru/v1/";
+$url = "https://api.enkod.ru/v1";
 
-$enkod = new enKod\Enkod($apiKey, $url);
+$enkod = new Enkod\Client($apiKey, $url);
 
-$enkod->isTransaction = false;
-$enkod->subject = "test"; //*
-$enkod->fromEmail = "test@test.ru"; //*
-$enkod->fromName = "test@test.ru"; //*
-$enkod->html = "<p><h1>Привет</h1></br>Это письмо для теста!</p>"; //*
-$enkod->plainText = "Привет! Это письмо для теста"; //*
-$enkod->replyToEmail = "germansobol@yandex.ru";
-$enkod->replyToName = "test";
-$enkod->tags = [
-    "Тестовое сообщение",
-    "АПИ",
-    "Test"
-];
-
-$enkod->sendOne("email@email.ru");
+$enkod->sendOne("email@email.ru", 1);
 ```
 
-$recipients используется при отправке сообщения несколькм получателям и представляет собой массив: <br>
-Звездочкой помечены обязательные поля
+* Третьим параметром можно передавать пользовательские данные для подстановки в тему или шаблон письма
+
 ```php
-[
-  "recipients" => [
-    [
-      "email" => "ivan@test.com", //*
-      "snippets" => [
-        "snippet1" => "value1",
-        "snippet2" => "value2"
-      ],
-      "attachments" => [
-        [
-          "fileName" => "test.pdf",
-          "mimeType" => "application/pdf",
-          "content" => "JVBERi0xLjUNCiW1tbW1DQoxIDAgb2JqDQo8PC9UeXBlL0NhdGFsb2cvUGFnZXMgMiAwIFIvTGFu\nZyhwbC1QTCkgL1N0cnVjdFRyZWVSb290IDggMCBSL01hcmtJbmZvPDwvTWFya2VkIHRydWU+Pj4+\nDQplbmRvYmoNCjIgMCBvYmoNCjw8L1R5cGUvUGFnZXMvQ291bnQgMS9LaWRzWyAzIDAgUl0gPj4N\nCmVuZG9iag0KMyAwIG9iag0KPDwvVHlwZS9QYWdlL1BhcmVudCAyIDAgUi9SZXNvdXJjZXM8PC9G\n...\nODlFOENBQTNGMTY5NzFBRTU+XSAvUHJldiA4MjU0MS9YUmVmU3RtIDgyMjcwPj4NCnN0YXJ0eHJl\nZg0KODMwNTcNCiUlRU9G\n"
-        ]
-      ]
-    ],
-    [
-      "email" => "petr@test.com", //*
-      "snippets" => [
-        "snippet1" => "value3",
-        "snippet2" => "value4"
-      ]
-    ]
-  ]
+<?php
+use Brandshopru\Enkod;
+
+$apiKey = "apikey";
+$url = "https://api.enkod.ru/v1";
+$snippets = [
+    'first_name' => 'Иванов',
+    'last_name' => 'Иван',
 ];
+$enkod = new Enkod\Client($apiKey, $url);
+
+$enkod->sendOne("email@email.ru", 1, $snippets);
 ```
 
