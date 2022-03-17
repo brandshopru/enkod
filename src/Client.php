@@ -22,7 +22,7 @@ class Client
         $this->body = [];
         $this->body['messageId'] = $email_id;
         $this->body['email'] = $email;
-        
+
         if (is_array($snippets) && !empty($snippets)) {
             foreach ($snippets as $key => $val) $this->body['snippets'][(string)$key] = (string)$val;
         }
@@ -30,10 +30,11 @@ class Client
         $this->method = 'POST';
 
         try {
-            $this->request("/mail/");
+            return $this->request("/mail/");
         } catch (\Exception $e) {
             echo $e->getMessage();
         }
+        return false;
     }
 
     public function sendMany(array $recipients, int $email_id)
@@ -45,31 +46,32 @@ class Client
         $this->method = 'POST';
 
         try {
-            $this->request("/mails/");
+            return $this->request("/mails/");
         } catch (\Exception $e) {
             echo $e->getMessage();
         }
+        return false;
     }
 
     /**
      * @param array $subscriber_info
      *
     {
-        "firstName": "Иван",
-        "lastName": "Иванов",
-        "email": "test@test.test",
-        "phone": "79009009090",
-        "mainChannel": "email",
-        "method": "addAndUpdate",
-        "groups": [
-            "newsletter",
-            "blog",
-            "recommendations"
-        ],
-        "extraFields": {
-            "city": "Москва",
-            "middleName": "Иванович"
-        }
+    "firstName": "Иван",
+    "lastName": "Иванов",
+    "email": "test@test.test",
+    "phone": "79009009090",
+    "mainChannel": "email",
+    "method": "addAndUpdate",
+    "groups": [
+    "newsletter",
+    "blog",
+    "recommendations"
+    ],
+    "extraFields": {
+    "city": "Москва",
+    "middleName": "Иванович"
+    }
     }
      *
      * @return object
@@ -81,12 +83,11 @@ class Client
         $this->method = 'POST';
 
         try {
-            $result = $this->request("/person/");
+            return $this->request("/person/");
         } catch (\Exception $e) {
             echo $e->getMessage();
         }
-
-        return $result;
+        return false;
     }
 
     /**
@@ -102,19 +103,14 @@ class Client
         else if (!empty($phone)) $url = '?phone=' . $phone;
         else return false;
 
-
-        // TODO чушь какую то возвращает
-
-
         $this->method = 'GET';
 
         try {
-            $result = $this->request("/isSubscriber/" . $url);
+            return $this->request("/isSubscriber/" . $url);
         } catch (\Exception $e) {
             echo $e->getMessage();
         }
-
-        return $result;
+        return false;
     }
 
     private function request(string $uri)
@@ -141,7 +137,7 @@ class Client
             else if ($httpcode === 401) throw new \Exception("У API ключа нет прав на выполнение этого действия");
             else if ($httpcode === 500) throw new \Exception("Что то пошло не так. Свяжитесь с менеджером. Код запроса: ".json_decode($result)['requestID']);
             else return $result->getContents();
-            
+
         } catch (GuzzleException $e) {
             echo $e->getMessage();
         }
