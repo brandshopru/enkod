@@ -53,6 +53,22 @@ class Client
         return false;
     }
 
+    public function insertTable(string $table, array $rows)
+    {
+        $this->body = [];
+        $this->body['table'] = $table;
+        $this->body['columns'] = $rows;
+
+        $this->method = 'POST';
+
+        try {
+            return $this->request("/table/insert/");
+        } catch (\Exception $e) {
+            echo $e->getMessage();
+        }
+        return false;
+    }
+
     /**
      * @param array $subscriber_info
      *
@@ -125,7 +141,7 @@ class Client
                         'apiKey' => $this->apikey,
                         'content-type' => 'application/json'
                     ],
-                    'body' => json_encode($this->body, JSON_FORCE_OBJECT),
+                    'body' => json_encode($this->body),
                 ]
             );
 
