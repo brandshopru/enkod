@@ -11,10 +11,26 @@ class Client
     private string $url;
     private string $method;
 
+    private $content;
+    private $error;
+
     public function __construct($apikey, $url)
     {
         $this->apikey = $apikey;
         $this->url = $url;
+
+        $this->content = '';
+        $this->error = '';
+    }
+
+    public function getContent()
+    {
+        return $this->content;
+    }
+
+    public function getError()
+    {
+        return $this->error;
     }
 
     public function sendOne(string $email, int $email_id, array $snippets = [])
@@ -30,28 +46,30 @@ class Client
         $this->method = 'POST';
 
         try {
-            return $this->request("/mail/");
+            $this->content = $this->request("/mail/");
+
+            return true;
         } catch (\Exception $e) {
-            echo $e->getMessage();
+            $this->error = $e->getMessage();
         }
         return false;
     }
 
-    public function sendMany(array $recipients, int $email_id)
-    {
-        $this->body = [];
-        $this->body['messageId'] = $email_id;
-        $this->body['recipients'] = $recipients;
-
-        $this->method = 'POST';
-
-        try {
-            return $this->request("/mails/");
-        } catch (\Exception $e) {
-            echo $e->getMessage();
-        }
-        return false;
-    }
+//    public function sendMany(array $recipients, string $email_id)
+//    {
+//        $this->body = [];
+//        $this->body['messageId'] = $email_id;
+//        $this->body['recipients'] = $recipients;
+//
+//        $this->method = 'POST';
+//
+//        try {
+//            return $this->request("/mails/");
+//        } catch (\Exception $e) {
+//            echo $e->getMessage();
+//        }
+//        return false;
+//    }
 
     public function insertTable(string $table, array $rows)
     {
@@ -62,9 +80,11 @@ class Client
         $this->method = 'POST';
 
         try {
-            return $this->request("/table/insert/");
+            $this->content = $this->request("/table/insert/");
+
+            return true;
         } catch (\Exception $e) {
-            echo $e->getMessage();
+            $this->error = $e->getMessage();
         }
         return false;
     }
@@ -99,7 +119,34 @@ class Client
         $this->method = 'POST';
 
         try {
-            return $this->request("/person/");
+            $this->content = $this->request("/person/");
+
+            return true;
+        } catch (\Exception $e) {
+            $this->error = $e->getMessage();
+        }
+        return false;
+    }
+
+
+    /*
+     *
+     {
+      "email": "test@test.test",
+      "groups": [
+        "newsletter",
+        "blog",
+        "recommendations"
+      ]
+    }
+     */
+    public function unsubscribe(array $subscriber_info = [])
+    {
+        $this->body = $subscriber_info;
+        $this->method = 'POST';
+
+        try {
+            return $this->request("/unsubscribe/");
         } catch (\Exception $e) {
             echo $e->getMessage();
         }
@@ -111,7 +158,7 @@ class Client
      * @param string $phone
      *
      */
-    public function checkSubscriber(string $email = '', string $phone = '')
+    public function getSubscriberInfo(string $email = '', string $phone = '')
     {
         $this->body = [];
 
@@ -122,7 +169,49 @@ class Client
         $this->method = 'GET';
 
         try {
-            return $this->request("/isSubscriber/" . $url);
+            $this->content = json_decode($this->request("/isSubscriber/" . $url));
+
+            return true;
+        } catch (\Exception $e) {
+            $this->error = $e->getMessage();
+        }
+        return false;
+    }
+
+    /**
+     *
+     */
+    public function getGroupsInfo()
+    {
+        $this->body = [];
+
+        $this->method = 'GET';
+
+        try {
+            $groups = [];
+
+            $groups_data = json_decode($this->request("/groups/"));
+            if ($groups_data) foreach ($groups_data as $group) $groups[$group->id] = $group;
+
+            return $groups;
+        } catch (\Exception $e) {
+            echo $e->getMessage();
+        }
+        return false;
+    }
+
+    /**
+     *
+     */
+    public function getGroupInfo($group_id)
+    {
+        $this->body = [];
+
+        $this->method = 'GET';
+
+        try {
+            $groups_data = json_decode($this->request("/groups/"));
+            if ($groups_data) foreach ($groups_data as $group) if ($group->id == $group_id) return $group;
         } catch (\Exception $e) {
             echo $e->getMessage();
         }
@@ -141,10 +230,9 @@ class Client
                         'apiKey' => $this->apikey,
                         'content-type' => 'application/json'
                     ],
-                    'body' => json_encode($this->body),
+                    'body' => (!empty($this->body) ? json_encode($this->body) : null),
                 ]
             );
-
             $httpcode = $request->getStatusCode();
             $result = $request->getBody();
 
@@ -155,7 +243,8 @@ class Client
             else return $result->getContents();
 
         } catch (GuzzleException $e) {
-            echo $e->getMessage();
+            $this->error = $e->getMessage();
+            return false;
         }
     }
 }
