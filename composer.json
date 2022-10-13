@@ -3,7 +3,6 @@
   "description": "PHP client for Enkod API",
   "type": "library",
   "require": {
-    "php": "^7.4",
     "ext-json": "*",
     "guzzlehttp/guzzle": "^6.0.0"
   },
